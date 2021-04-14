@@ -1,0 +1,84 @@
+%{
+#include<linux/byteorder/generic.h>
+#include<linux/if_ether.h>
+#include<linux/skbuff.h>
+#include<linux/ip.h>
+#include<linux/in.h>
+#include<linux/tcp.h>
+#include <linux/sched.h>
+#include <linux/list.h>
+#include <linux/pid.h>
+#include <linux/mm.h>
+%}
+
+function isicmp:long (data:long)
+%{
+    struct iphdr *ip;
+    struct sk_buff *skb;
+    int tmp = 0;
+
+    skb = (struct sk_buff *) STAP_ARG_data;
+
+    if (skb->protocol == htons(ETH_P_IP)){
+            ip = (struct iphdr *) skb->data;
+            tmp = (ip->protocol == 1);
+    }
+    STAP_RETVALUE = tmp;
+%}
+
+function task_execname_by_pid:string (pid:long) %{
+    struct task_struct *task;
+
+    task = pid_task(find_vpid(STAP_ARG_pid), PIDTYPE_PID);
+
+//     proc_pid_cmdline(p, STAP_RETVALUE);
+    snprintf(STAP_RETVALUE, MAXSTRINGLEN, "%s", task->comm);
+    
+%}
+
+function ipsource:long (data:long)
+%{
+    struct sk_buff *skb;
+    struct iphdr *ip;
+    __be32 src;
+
+    skb = (struct sk_buff *) STAP_ARG_data;
+
+    ip = (struct iphdr *) skb->data;
+    src = (__be32) ip->saddr;
+
+    STAP_RETVALUE = src;
+%}
+
+/* Return ip destination address */
+function ipdst:long (data:long)
+%{
+    struct sk_buff *skb;
+    struct iphdr *ip;
+    __be32 dst;
+
+    skb = (struct sk_buff *) STAP_ARG_data;
+
+    ip = (struct iphdr *) skb->data;
+    dst = (__be32) ip->daddr;
+
+    STAP_RETVALUE = dst;
+%}
+
+function parseIp:string (data:long) %{ 
+    sprintf(STAP_RETVALUE,"%d.%d,%d.%d",(int)STAP_ARG_data &0xFF,(int)(STAP_ARG_data>>8)&0xFF,(int)(STAP_ARG_data>>16)&0xFF,(int)(STAP_ARG_data>>24)&0xFF);
+%}
+
+
+probe kernel.function("ip_finish_output").call {
+    if (isicmp($skb)) {
+        pid_data = pid()
+        /* IP */
+        ipdst = ipdst($skb)
+        ipsrc = ipsource($skb)
+        printf("pid is:%d,source address is:%s, destination address is %s, command is: '%s'\n",pid_data,parseIp(ipsrc),parseIp(ipdst),task_execname_by_pid(pid_data))
+    
+    } else {
+        next
+    }
+}
