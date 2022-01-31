@@ -3,7 +3,7 @@ import time
 import argparse
 import pandas
 
-bpf_text="""
+bpf_text = """
 #include <uapi/linux/ptrace.h>
 #include <linux/fs.h>
 #include <linux/sched.h>
@@ -136,12 +136,12 @@ int trace_nfs_getattr_return(struct pt_regs *ctx) {
 
 """
 
-args=argparse.ArgumentParser()
-args.add_argument("pid", nargs="?", default='0')
+args = argparse.ArgumentParser()
+args.add_argument("pid", nargs="?", default="0")
 
-bpf_text=bpf_text.replace('{PID}', args.parse_args().pid)
+bpf_text = bpf_text.replace("{PID}", args.parse_args().pid)
 
-bpf=BPF(text=bpf_text)
+bpf = BPF(text=bpf_text)
 
 bpf.attach_kprobe(event="nfs_open", fn_name="trace_nfs_open_enter")
 bpf.attach_kprobe(event="nfs_lookup", fn_name="trace_nfs_lookup_enter")
@@ -160,23 +160,23 @@ bpf.attach_kretprobe(event="nfs_permission", fn_name="trace_nfs_permission_retur
 bpf.attach_kretprobe(event="nfs_getattr", fn_name="trace_nfs_getattr_return")
 
 
-read_data=[]
+read_data = []
 
 
 def process_event_data(cpu, data, size):
-    event=bpf["events"].event(data)
-    result={}
-    result['pid']=event.pid
-    result['delta_ts']=event.delta_ts
-    result['mode']=event.mode
+    event = bpf["events"].event(data)
+    result = {}
+    result["pid"] = event.pid
+    result["delta_ts"] = event.delta_ts
+    result["mode"] = event.mode
     read_data.append(result)
+
 
 bpf["events"].open_ring_buffer(process_event_data)
 while True:
     try:
         bpf.ring_buffer_consume()
     except KeyboardInterrupt:
-        read_df=pandas.DataFrame(read_data)
-        read_df.to_csv('read_file_time_with_nas_detail.csv')
+        read_df = pandas.DataFrame(read_data)
+        read_df.to_csv("read_file_time_with_nas_detail.csv")
         exit()
-    

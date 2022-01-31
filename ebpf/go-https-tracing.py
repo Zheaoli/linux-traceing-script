@@ -80,12 +80,17 @@ def parse_ip_address(data):
 def print_icmp_event(cpu, data, size):
     # event = b["probe_icmp_events"].event(data)
     # event = ctypes.cast(data, ctypes.POINTER(IcmpSamples)).contents
-    event= bpf["ipv4_events"].event(data)
+    event = bpf["ipv4_events"].event(data)
     daddress = parse_ip_address(event.daddr)
     # data=list(event.data)
-    # temp=binascii.hexlify(data) 
+    # temp=binascii.hexlify(data)
     body = bytearray(event.data).hex()
-    if "c0 2f c0 30 c0 2b c0 2c cc a8 cc a9 c0 13 c0 09 c0 14 c0 0a 00 9c 00 9d 00 2f 00 35 c0 12 00 0a 13 01 13 03 13 02".replace(" ", "") in body:
+    if (
+        "c0 2f c0 30 c0 2b c0 2c cc a8 cc a9 c0 13 c0 09 c0 14 c0 0a 00 9c 00 9d 00 2f 00 35 c0 12 00 0a 13 01 13 03 13 02".replace(
+            " ", ""
+        )
+        in body
+    ):
         # if "68747470" in temp.decode():
         print(
             f"pid:{event.pid}, daddress:{daddress}, saddress:{parse_ip_address(event.saddr)}, {event.lport}, {event.dport}, {event.data_size}"

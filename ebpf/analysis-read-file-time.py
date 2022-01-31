@@ -3,7 +3,7 @@ import time
 import argparse
 import pandas
 
-bpf_text="""
+bpf_text = """
 #include <uapi/linux/ptrace.h>
 #include <linux/fs.h>
 #include <linux/sched.h>
@@ -90,42 +90,42 @@ int trace_vfs_write_exit(struct pt_regs *ctx){
 
 """
 
-args=argparse.ArgumentParser()
-args.add_argument("pid", nargs="?", default='0')
+args = argparse.ArgumentParser()
+args.add_argument("pid", nargs="?", default="0")
 
-bpf_text=bpf_text.replace('{PID}', args.parse_args().pid)
+bpf_text = bpf_text.replace("{PID}", args.parse_args().pid)
 
-bpf=BPF(text=bpf_text)
+bpf = BPF(text=bpf_text)
 
 bpf.attach_kprobe(event="vfs_read", fn_name="trace_vfs_rw_entry")
 bpf.attach_kprobe(event="vfs_write", fn_name="trace_vfs_rw_entry")
 bpf.attach_kretprobe(event="vfs_read", fn_name="trace_vfs_read_exit")
 bpf.attach_kretprobe(event="vfs_write", fn_name="trace_vfs_write_exit")
 
-read_data=[]
-write_data=[]
+read_data = []
+write_data = []
 
 
 def process_event_data(cpu, data, size):
-    event=bpf["events"].event(data)
-    result={}
-    result['pid']=event.pid
-    result['data_size']=event.data_size
-    result['delta_ts']=event.delta_ts
-    result['name']=event.name.decode("utf-8", "replace")
-    if event.mode==0:
+    event = bpf["events"].event(data)
+    result = {}
+    result["pid"] = event.pid
+    result["data_size"] = event.data_size
+    result["delta_ts"] = event.delta_ts
+    result["name"] = event.name.decode("utf-8", "replace")
+    if event.mode == 0:
         read_data.append(result)
     else:
         write_data.append(result)
+
 
 bpf["events"].open_perf_buffer(process_event_data)
 while True:
     try:
         bpf.perf_buffer_poll()
     except KeyboardInterrupt:
-        read_df=pandas.DataFrame(read_data)
-        write_df=pandas.DataFrame(write_data)
-        read_df.to_csv('read_file_time_with_nas.csv')
-        write_df.to_csv('write_file_time_with_nas.csv')
+        read_df = pandas.DataFrame(read_data)
+        write_df = pandas.DataFrame(write_data)
+        read_df.to_csv("read_file_time_with_nas.csv")
+        write_df.to_csv("write_file_time_with_nas.csv")
         exit()
-    
