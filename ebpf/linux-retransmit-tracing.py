@@ -26,7 +26,7 @@ TRACEPOINT_PROBE(tcp, tcp_retransmit_skb)
     event_data.pid=bpf_get_current_pid_tgid()>>32;
     bpf_probe_read_kernel(&event_data.saddr,sizeof(event_data.saddr), args->saddr);
     bpf_probe_read_kernel(&event_data.daddr,sizeof(event_data.daddr), args->daddr);
-    tcp_event.ringbuf_output(args,&event_data, sizeof(struct event_data_t), 0);
+    tcp_event.ringbuf_output(&event_data, sizeof(struct event_data_t), 0);
     return 0;
 }
 
@@ -39,7 +39,7 @@ TRACEPOINT_PROBE(tcp, tcp_receive_reset)
     event_data.pid=bpf_get_current_pid_tgid()>>32;
     bpf_probe_read_kernel(&event_data.saddr,sizeof(event_data.saddr), args->saddr);
     bpf_probe_read_kernel(&event_data.daddr,sizeof(event_data.daddr), args->daddr);
-    tcp_event.ringbuf_output(args,&event_data, sizeof(struct event_data_t), 0);
+    tcp_event.ringbuf_output(&event_data, sizeof(struct event_data_t), 0);
     return 0;
 }
 
