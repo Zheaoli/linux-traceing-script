@@ -49,6 +49,8 @@ def process_recv_rst_event_data(cpu, data, size):
     print("resv rst %d %d %s %s %d" % (event.sport, event.dport, ".".join([str(i) for i in event.saddr]), ".".join([str(i) for i  in event.daddr]), event.pid))
 
 bpf["retrans_events"].open_perf_buffer(process_rtrans_event_data)
+bpf["recv_events"].open_perf_buffer(process_recv_rst_event_data)
+
 
 while True:
     bpf.perf_buffer_poll()
