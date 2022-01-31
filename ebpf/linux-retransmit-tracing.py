@@ -41,11 +41,11 @@ TRACEPOINT_PROBE(tcp, tcp_receive_reset)
 bpf=BPF(text=bpf_text)
 
 def process_rtrans_event_data(cpu, data, size):
-    event=bpf["events"].event(data)
+    event=bpf["retrans_events"].event(data)
     print("retrans %d %d %s %s %d" % (event.sport, event.dport, ".".join([str(i) for i in event.saddr]), ".".join([str(i) for i  in event.daddr]), event.pid))
 
 def process_recv_rst_event_data(cpu, data, size):
-    event=bpf["events"].event(data)
+    event=bpf["recv_events"].event(data)
     print("resv rst %d %d %s %s %d" % (event.sport, event.dport, ".".join([str(i) for i in event.saddr]), ".".join([str(i) for i  in event.daddr]), event.pid))
 
 bpf["retrans_events"].open_perf_buffer(process_rtrans_event_data)
