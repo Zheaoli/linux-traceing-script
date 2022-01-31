@@ -1,4 +1,4 @@
-from bcc import BPF,Tracepoint
+from bcc import BPF
 
 bpf_text = """
 BPF_RINGBUF_OUTPUT(events, 65536);
