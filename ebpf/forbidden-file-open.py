@@ -28,6 +28,9 @@ BPF_RINGBUF_OUTPUT(events, 65536);
 int trace_sys_openat(struct pt_regs *ctx) {
 
     u32 pid=bpf_get_current_pid_tgid()>>32;
+    if (pid == {pid}){
+        return 0;
+    }
     struct pt_regs *__ctx = (struct pt_regs *)PT_REGS_PARM1(ctx);
     char __user *filename ;
     bpf_probe_read_kernel(&filename, sizeof(filename), &(PT_REGS_PARM2(__ctx)));
@@ -49,24 +52,26 @@ int trace_sys_openat(struct pt_regs *ctx) {
 """
 args = argparse.ArgumentParser()
 args.add_argument("filename", nargs="?", default="")
+args.add_argument("pid", nargs="?", default="")
 
 filename=args.parse_args().filename
-print(filename)
+pid=args.parse_args().pid
 
-bpf_text = bpf_text.replace("{file_name}", filename).replace("{length}", str(len(filename)))
+bpf_text = bpf_text.replace("{file_name}", filename).replace("{length}", str(len(filename))).replace("{pid}", pid)
 
 bpf = BPF(text=bpf_text)
 
 bpf.attach_kprobe(event="__x64_sys_openat", fn_name="trace_sys_openat")
 
-def process_event_data(cpu, data, size):
-    event =  bpf["events"].event(data)
-    print(f"Process {event.pid} try to open {filename} but is forbidden,{event.status}, {event.data}")
+# def process_event_data(cpu, data, size):
+#     event =  bpf["events"].event(data)
+#     print(f"Process {event.pid} try to open {filename} but is forbidden,{event.status}, {event.data}")
 
-bpf["events"].open_ring_buffer(process_event_data)
+# bpf["events"].open_ring_buffer(process_event_data)
 while True:
     try:
-        bpf.ring_buffer_consume()
+        time.sleep(1)
+        # bpf.ring_buffer_consume()
     except KeyboardInterrupt:
         exit()
 
