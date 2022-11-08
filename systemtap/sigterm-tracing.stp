@@ -1,0 +1,37 @@
+%{
+#include<linux/byteorder/generic.h>
+#include<linux/if_ether.h>
+#include<linux/skbuff.h>
+#include<linux/ip.h>
+#include<linux/in.h>
+#include<linux/tcp.h>
+#include <linux/sched.h>
+#include <linux/list.h>
+#include <linux/pid.h>
+#include <linux/mm.h>
+
+%}
+
+function task_execname_by_pid:string (pid:long) %{
+    struct task_struct *task;
+
+    task = pid_task(find_vpid(STAP_ARG_pid), PIDTYPE_PID);
+
+//     proc_pid_cmdline(p, STAP_RETVALUE);
+    snprintf(STAP_RETVALUE, MAXSTRINGLEN, "%s", task->comm);
+    
+%}
+
+
+
+probe kernel.function("kill_something_info").call {
+    if ($(sig) == 15) {
+        pid_data = pid()
+        /* IP */
+
+        printf("pid is:%d, command is: '%s', destination target is: %d\n",pid_data,task_execname_by_pid(pid_data), $pid)
+    
+    } else {
+        next
+    }
+}
